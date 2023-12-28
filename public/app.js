@@ -1,4 +1,4 @@
-const chatMessages = document.getElementById('chat-messages');
+const chatContainer = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
 const ws = new WebSocket('ws://' + window.location.host);
 
@@ -21,6 +21,7 @@ function processNewMessages(messageJson) {
         throw err;
     }
     displayMessages(messages);
+    scrollToBottom();
 }
 
 // function getMessages() {
@@ -37,9 +38,13 @@ function displayMessages(messages) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message');
         messageElement.textContent = message;
-        chatMessages.appendChild(messageElement);
+        chatContainer.appendChild(messageElement);
     });
 }
+
+function scrollToBottom() {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+};
 
 function sendMessage() {
     const messageText = messageInput.value.trim();
