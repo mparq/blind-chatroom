@@ -1,6 +1,10 @@
 const chatContainer = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
-const ws = new WebSocket('ws://' + window.location.host);
+
+// web socket protocol needs to change based on http protocol used to serve app
+// https://stackoverflow.com/questions/74258122/codespaces-and-https
+const wsp = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${wsp}://` + window.location.host);
 
 // WebSocket connection opened
 ws.addEventListener('open', (event) => {
