@@ -14,3 +14,11 @@ Or, you can use github's codespaces.
 
 Either way, the server is a simple nodeJS server, locally running on port 3000. `server.js` is the backend. Frontend code is whatever's in `public/`. `app.js` has client-side javascript logic.
 
+In a terminal, run the following and follow normal webdev loop
+
+```sh
+npm i
+# start local server
+npm start
+```
+
