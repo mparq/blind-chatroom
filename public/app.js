@@ -5,19 +5,40 @@ const messageInput = document.getElementById('message-input');
 // https://stackoverflow.com/questions/74258122/codespaces-and-https
 const wsp = window.location.protocol === 'https:' ? 'wss' : 'ws';
 const wsHostAddress = `${wsp}://` + window.location.host;
-const ws = setupWebSocket(wsHostAddress);
+let ws = setupWebSocket(wsHostAddress);
 
 function setupWebSocket(hostAddress) {
     const ws = new WebSocket(hostAddress);
+
+    let errorOnConnect = false;
+
     // WebSocket connection opened
     ws.addEventListener('open', (event) => {
         console.log('WebSocket connection opened:', event);
+        clearErrorMessage();
+        clearReconnectButton();
     });
 
     ws.addEventListener('close', (event) => {
         console.warn(`WebSocket connection closed: ${event}`);
-        // showReconnectButton
+        if (!errorOnConnect) {
+            // unsure about this logic. behavior I'm seeing: if connection gets dropped on server-side, we don't actually
+            // get an 'error' event in browser WebSocket implementation, just a 'close' with a code and a reason.
+            // but if we get an error on connecting (e.g. no internet connection or server is down), then we do get the
+            // 'error' event. hmm. oh well.
+            displayErrorMessage(`WebSocket error occured and the connection was closed. I recommend reconnecting.`);
+        }
+        displayReconnectButton();
     });
+
+    ws.addEventListener('error', (event) => {
+        errorOnConnect = true;
+        // NOTE: most browser implementations strip any web socket error information due to security implications
+        // we can't get much information here, other than showing a generic error message. Sad.
+        // https://stackoverflow.com/questions/18803971/websocket-onerror-how-to-read-error-description
+        console.error(`WebSocket error: There will be a better error message in the browser console.`);
+        displayErrorMessage(`WebSocket error occurred on connection attempt. Server or internet is potentially down.`);
+    })
 
     // WebSocket message received
     ws.addEventListener('message', (event) => {
@@ -25,6 +46,28 @@ function setupWebSocket(hostAddress) {
     });
 
     return ws;
+}
+
+function displayReconnectButton() {
+    document.getElementById('reconnect-button').style.display = 'block';
+}
+
+function clearReconnectButton() {
+    document.getElementById('reconnect-button').style.display = 'none';
+}
+
+function displayErrorMessage(message) {
+    const errorMessageEl = document.getElementById('error-message');
+    errorMessageEl.innerText = message;
+    errorMessageEl.style.display = 'block';
+}
+
+function clearErrorMessage() {
+    document.getElementById('error-message').style.display = 'none';
+}
+
+function reconnect() {
+    ws = setupWebSocket(wsHostAddress);
 }
 
 function processNewMessages(messageJson) {
