@@ -29,6 +29,10 @@ wss.on('connection', (ws) => {
             }
         });
     });
+
+    ws.on('close', (code, reason) => {
+        console.log(`WebSocket connection closed. Code: ${code}, Reason: ${reason}`);
+    });
 });
 
 // Serve static files (HTML, CSS, JS)
