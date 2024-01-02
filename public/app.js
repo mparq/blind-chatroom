@@ -4,17 +4,28 @@ const messageInput = document.getElementById('message-input');
 // web socket protocol needs to change based on http protocol used to serve app
 // https://stackoverflow.com/questions/74258122/codespaces-and-https
 const wsp = window.location.protocol === 'https:' ? 'wss' : 'ws';
-const ws = new WebSocket(`${wsp}://` + window.location.host);
+const wsHostAddress = `${wsp}://` + window.location.host;
+const ws = setupWebSocket(wsHostAddress);
 
-// WebSocket connection opened
-ws.addEventListener('open', (event) => {
-    console.log('WebSocket connection opened:', event);
-});
+function setupWebSocket(hostAddress) {
+    const ws = new WebSocket(hostAddress);
+    // WebSocket connection opened
+    ws.addEventListener('open', (event) => {
+        console.log('WebSocket connection opened:', event);
+    });
 
-// WebSocket message received
-ws.addEventListener('message', (event) => {
-    processNewMessages(event.data);
-});
+    ws.addEventListener('close', (event) => {
+        console.warn(`WebSocket connection closed: ${event}`);
+        // showReconnectButton
+    });
+
+    // WebSocket message received
+    ws.addEventListener('message', (event) => {
+        processNewMessages(event.data);
+    });
+
+    return ws;
+}
 
 function processNewMessages(messageJson) {
     let messages;
