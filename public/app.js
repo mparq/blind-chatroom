@@ -1,3 +1,10 @@
+const MESSAGE_TYPES = {
+    INITIAL_MESSAGES: 'initial',
+    MESSAGE: 'message',
+    PING: 'ping',
+    PONG: 'pong'
+};
+
 const chatContainer = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
 
@@ -42,11 +49,19 @@ function setupWebSocket(hostAddress) {
 
     // WebSocket message received
     ws.addEventListener('message', (event) => {
-        processNewMessages(event.data);
+        processWsMessage(event.data);
     });
 
     return ws;
 }
+
+// Handle "Enter" key press in the input box
+messageInput.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        sendMessage();
+    }
+});
+
 
 function displayReconnectButton() {
     document.getElementById('reconnect-button').style.display = 'block';
@@ -70,25 +85,23 @@ function reconnect() {
     ws = setupWebSocket(wsHostAddress);
 }
 
-function processNewMessages(messageJson) {
-    let messages;
+function processWsMessage(messageJson) {
+    let msg = null;
     try {
-        messages = JSON.parse(messageJson);
+        msg = JSON.parse(messageJson);
     } catch (err) {
         console.error(`Error parsing websocket message: ${messageJson}`)
         throw err;
     }
-    displayMessages(messages);
-    scrollToBottom();
-}
+    if (msg.type === MESSAGE_TYPES.INITIAL_MESSAGES || msg.type === MESSAGE_TYPES.MESSAGE) {
+        if (msg.type === MESSAGE_TYPES.MESSAGE) {
+            sendMessageToServer(MESSAGE_TYPES.PONG, { original_ts: msg.ts });
+        }
+        displayMessages(msg.data);
+        scrollToBottom();
+    } 
 
-// function getMessages() {
-//     fetch('/api/messages')
-//         .then(response => response.json())
-//         .then(data => {
-//             displayMessages(data);
-//         });
-// }
+}
 
 function displayMessages(messages) {
     // chatMessages.innerHTML = '';
@@ -108,28 +121,23 @@ function sendMessage() {
     const messageText = messageInput.value.trim();
 
     if (messageText !== '') {
-        ws.send(JSON.stringify(messageText));
-        // fetch('/api/messages', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify({ message: messageText }),
-        // })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         console.log(data);
-        //         getMessages();
-        //     });
-
+        sendMessageToServer(MESSAGE_TYPES.MESSAGE, messageText);
         messageInput.value = '';
     }
 }
 
-// Handle "Enter" key press in the input box
-messageInput.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        sendMessage();
-    }
-});
+function sendMessageToServer(type, data) {
+    const serverMessage = {
+        type: type,
+        data: data,
+        ts: Date.now()
+    };
+    ws.send(JSON.stringify(serverMessage));
+}
 
+function parseMessage(wsMessage) {
+    msg = JSON.parse(wsMessage);
+    assert(msg !== undefined && msg !== null, 'Invalid undefined or null message');
+    assertValidMessageType(msg.type);
+    return msg;
+}
