@@ -1,28 +1,30 @@
-trigger:
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - '*'
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
-variables:
-  dockerRegistry: 'ghcr.io'
-  repositoryName: '$(Build.Repository.Name)' # This will be like 'owner/repo'
-  imageName: '$(dockerRegistry)/$(repositoryName)'
-  tag: '$(Build.BuildNumber)'
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
-pool:
-  vmImage: 'ubuntu-latest'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-steps:
-- task: Docker@2
-  inputs:
-    containerRegistry: 'GitHub Container Registry'
-    repository: '$(repositoryName)'
-    command: 'buildAndPush'
-    Dockerfile: '**/Dockerfile'
-    tags: |
-      $(tag)
-      latest
-  displayName: 'Build and push Docker image'
+      - name: Log in to GitHub container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
