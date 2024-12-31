@@ -1,0 +1,28 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - '*'
+
+variables:
+  dockerRegistry: 'ghcr.io'
+  repositoryName: '$(Build.Repository.Name)' # This will be like 'owner/repo'
+  imageName: '$(dockerRegistry)/$(repositoryName)'
+  tag: '$(Build.BuildNumber)'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Docker@2
+  inputs:
+    containerRegistry: 'GitHub Container Registry'
+    repository: '$(repositoryName)'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
+    tags: |
+      $(tag)
+      latest
+  displayName: 'Build and push Docker image'
